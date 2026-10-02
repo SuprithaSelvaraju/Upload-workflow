@@ -1,5 +1,5 @@
 import { useCallback, useReducer, useRef, type RefObject } from 'react';
-import type { ModelStats } from '../../domain/sceneModel';
+import type { LinearUnit, ModelStats } from '../../domain/sceneModel';
 import { ImportError, isAbortError, throwIfAborted, type ImportErrorPayload } from '../../importers/errors';
 import { findImporter, supportedFormatsLabel } from '../../importers/registry';
 import type { ImportStage } from '../../importers/types';
@@ -13,6 +13,9 @@ export interface LoadedInfo {
   stats: ModelStats;
   warnings: string[];
   loadMs: number;
+  /** Minor grid spacing in `units`; 0 if the viewer did not report one. */
+  gridSpacing: number;
+  units: LinearUnit;
 }
 
 /** Plain data only: no SceneModel, no vtk.js or OCCT objects. */
@@ -100,7 +103,7 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
         await nextPaint(); // let the "preparing" state paint before the synchronous scene build
         throwIfAborted(signal);
 
-        viewerRef.current?.setModel(model);
+        const sceneInfo = viewerRef.current?.setModel(model);
         dispatch({
           type: 'ready',
           info: {
@@ -108,6 +111,8 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
             stats: model.stats,
             warnings: model.warnings,
             loadMs: performance.now() - startedAt,
+            gridSpacing: sceneInfo?.gridSpacing ?? 0,
+            units: model.units,
           },
         });
       } catch (e) {

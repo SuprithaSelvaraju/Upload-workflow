@@ -32,6 +32,17 @@
   --color-hud-ink: #dcdce0;        /* chosen */
   --color-hud-muted: #8f8f98;      /* chosen */
   --color-part: #b9c0c7;           /* chosen: parts that carry no colour in the file */
+  --color-brand-on-dark: #3fb8ad;  /* chosen: teal that stays legible on the dark canvas */
+
+  /* Floor under the model. Ground and grid fade into --color-canvas with distance. */
+  --color-ground: #1e1e21;         /* chosen: a step lighter than the canvas */
+  --color-grid: #2a2a2f;           /* chosen */
+  --color-grid-major: #3b3b42;     /* chosen */
+
+  /* Axis triad (muted, not signal colours) */
+  --color-axis-x: #d9706b;         /* chosen */
+  --color-axis-y: #6dbb86;         /* chosen */
+  --color-axis-z: #6a9ee0;         /* chosen */
 
   /* Error state card */
   --color-danger-bg: #fef2f2;      /* sampled */

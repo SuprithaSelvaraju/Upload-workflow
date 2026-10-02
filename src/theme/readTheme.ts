@@ -19,5 +19,8 @@ export function readViewerTheme(): ViewerTheme {
   return {
     background: readToken('--color-canvas'),
     defaultPartColor: readToken('--color-part'),
+    ground: readToken('--color-ground'),
+    grid: readToken('--color-grid'),
+    gridMajor: readToken('--color-grid-major'),
   };
 }

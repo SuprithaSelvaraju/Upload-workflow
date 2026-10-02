@@ -44,10 +44,12 @@ export function buildScene(model: SceneModel, renderer: vtkRenderer, defaultColo
     const [r, g, b] = mesh.color ?? defaultColor;
     const property = actor.getProperty();
     property.setColor(r, g, b);
-    property.setAmbient(0.2);
+    // Ambient is the "fill from everywhere" term (there is no ambient light); see lighting.ts.
+    // Specular stays low: industrial paint and steel, not chrome.
+    property.setAmbient(0.18);
     property.setDiffuse(0.8);
-    property.setSpecular(0.15);
-    property.setSpecularPower(24);
+    property.setSpecular(0.1);
+    property.setSpecularPower(20);
 
     renderer.addActor(actor);
     actors.push(actor);

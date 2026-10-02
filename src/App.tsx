@@ -1,29 +1,14 @@
-import { useMemo, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react';
 import { ErrorCard } from './features/errors/ErrorCard';
+import { AppHeader } from './features/header/AppHeader';
 import { useModelLoader } from './features/loader/useModelLoader';
-import { StatusBar } from './features/status/StatusBar';
-import { DropCard, LoadingCard, secondaryButton } from './features/upload/StateCards';
-import { ViewerControls } from './features/viewer-hud/ViewerControls';
+import { DropCard, LoadingCard } from './features/upload/StateCards';
+import { AxisTriad } from './features/viewer-hud/AxisTriad';
+import { ModelInfoPanel } from './features/viewer-hud/ModelInfoPanel';
+import { NavigationHints, ViewControls } from './features/viewer-hud/ViewControls';
 import { acceptAttribute } from './importers/registry';
 import { readViewerTheme } from './theme/readTheme';
-import { ViewerCanvas, type ViewerHandle } from './viewer/ViewerCanvas';
-
-function Wordmark() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="text-brand">
-        <path
-          d="M10 2l6.5 2.5v5c0 4-2.7 6.7-6.5 8-3.8-1.3-6.5-4-6.5-8v-5L10 2z"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span className="text-sm font-semibold">AgniKawach</span>
-      <span className="text-sm text-ink-muted">CAD viewer</span>
-    </div>
-  );
-}
+import { ViewerCanvas, type CameraListener, type ViewerHandle } from './viewer/ViewerCanvas';
 
 export default function App() {
   const viewerRef = useRef<ViewerHandle>(null);
@@ -35,7 +20,13 @@ export default function App() {
   const theme = useMemo(() => readViewerTheme(), []);
 
   const chooseFile = () => inputRef.current?.click();
+  const subscribeCamera = useCallback(
+    (listener: CameraListener) => viewerRef.current?.subscribeCamera(listener) ?? (() => {}),
+    [],
+  );
+
   const hasModel = state.loaded !== null;
+  const showHud = hasModel && !state.loading;
 
   const onDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes('Files')) return;
@@ -54,24 +45,22 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-app text-ink">
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-line bg-surface px-4">
-        <Wordmark />
-        {hasModel && (
-          <button type="button" className={secondaryButton} onClick={chooseFile}>
-            Open another file
-          </button>
-        )}
-      </header>
+      <AppHeader state={state} onOpen={chooseFile} />
 
-      <main
-        className="relative min-h-0 flex-1"
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
+      <main className="relative min-h-0 flex-1" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         <ViewerCanvas ref={viewerRef} theme={theme} />
 
-        {hasModel && !state.loading && <ViewerControls onResetView={() => viewerRef.current?.resetView()} />}
+        {showHud && state.loaded && (
+          <>
+            <ModelInfoPanel info={state.loaded} />
+            <ViewControls
+              onView={(view) => viewerRef.current?.setStandardView(view)}
+              onFit={() => viewerRef.current?.fit()}
+            />
+            <AxisTriad subscribe={subscribeCamera} />
+            <NavigationHints />
+          </>
+        )}
 
         {!hasModel && !state.loading && !state.error && <DropCard onChoose={chooseFile} />}
         {state.loading && (
@@ -82,13 +71,11 @@ export default function App() {
         )}
 
         {dragging && (
-          <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-lg border-2 border-dashed border-brand bg-brand/10">
+          <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-lg border-2 border-dashed border-brand-on-dark bg-brand/10">
             <p className="rounded-md bg-surface px-4 py-2 text-sm font-medium">Drop to open</p>
           </div>
         )}
       </main>
-
-      <StatusBar state={state} />
 
       <input
         ref={inputRef}
