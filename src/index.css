@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/*
+ * Single source of truth for colour and type.
+ * `static` makes Tailwind emit every variable, so the 3D canvas can read the
+ * few it needs at runtime (src/theme/readTheme.ts). Canvas and WebGL tokens
+ * MUST stay #rrggbb.
+ *
+ * Values marked "sampled" were measured from the AgniKawach Studio screenshots;
+ * the rest are chosen to fit. Replace all of them with the real design tokens
+ * when this is integrated into the main platform.
+ */
+@theme static {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Application chrome (light) */
+  --color-app: #f4f4f4;            /* sampled: page background */
+  --color-surface: #ffffff;        /* sampled: cards, bars */
+  --color-line: #e5e5e3;           /* sampled: card border */
+  --color-ink: #1c1c1c;            /* chosen */
+  --color-ink-muted: #6b6b68;      /* chosen */
+
+  /* Primary action */
+  --color-brand: #0d756e;          /* sampled: teal button */
+  --color-brand-strong: #0a5e59;   /* chosen: hover */
+
+  /* 3D canvas (dark) */
+  --color-canvas: #171719;         /* sampled: map canvas */
+  --color-hud: #1c1b20;            /* sampled: floating panel */
+  --color-hud-line: #2c2c30;       /* sampled border, lightened slightly for contrast */
+  --color-hud-ink: #dcdce0;        /* chosen */
+  --color-hud-muted: #8f8f98;      /* chosen */
+  --color-part: #b9c0c7;           /* chosen: parts that carry no colour in the file */
+
+  /* Error state card */
+  --color-danger-bg: #fef2f2;      /* sampled */
+  --color-danger-line: #e9b4b4;    /* chosen */
+  --color-danger-ink: #971a1e;     /* sampled */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-app);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.progress-indeterminate {
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-indeterminate {
+    animation: none;
+    width: 100%;
+    opacity: 0.45;
+  }
+}
