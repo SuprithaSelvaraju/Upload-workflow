@@ -22,5 +22,6 @@ export function readViewerTheme(): ViewerTheme {
     ground: readToken('--color-ground'),
     grid: readToken('--color-grid'),
     gridMajor: readToken('--color-grid-major'),
+    selection: readToken('--color-selection'),
   };
 }

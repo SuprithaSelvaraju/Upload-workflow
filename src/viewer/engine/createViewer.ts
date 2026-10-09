@@ -5,7 +5,8 @@ import type { Rgb, SceneModel, Vec3 } from '../../domain/sceneModel';
 import { buildScene, type SceneHandle } from './buildScene';
 import { buildEnvironment, type Environment } from './sceneEnvironment';
 import { createLighting } from './lighting';
-import { createOrbitController, type CameraRig } from './orbitController';
+import { createOrbitController, type CameraRig, type PointerPoint } from './orbitController';
+import { buildPickIndex, pickRay, rayFromPixel, type PickIndex } from './picking';
 import {
   STANDARD_VIEWS,
   cameraPosition,
@@ -22,6 +23,14 @@ export interface ViewerTheme {
   ground: Rgb;
   grid: Rgb;
   gridMajor: Rgb;
+  /** Accent the selected part is tinted towards. */
+  selection: Rgb;
+}
+
+/** The part the user picked. `meshId` indexes SceneModel.meshes. */
+export interface PartSelection {
+  meshId: number;
+  name: string;
 }
 
 /** What the viewer tells the UI about the scene it just built. */
@@ -39,6 +48,11 @@ export interface ViewerEngine {
   setStandardView(view: StandardView): void;
   /** Called on every camera change, with the angles the axis triad needs. */
   onCameraChange(listener: (angles: ViewAngles) => void): () => void;
+  /** Select a mesh programmatically (null clears). Fires onSelectionChange like a click does. */
+  selectMesh(meshId: number | null): void;
+  getSelection(): PartSelection | null;
+  /** Fires when the selection changes: by click on a part, click on empty space, or selectMesh. */
+  onSelectionChange(listener: (selection: PartSelection | null) => void): () => void;
   dispose(): void;
 }
 
@@ -106,15 +120,45 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
     },
   };
 
-  const controller = createOrbitController(host, rig, {
-    target: [0, 0, 0],
-    ...STANDARD_VIEWS.iso,
-    distance: 10,
-  });
-
+  // ---- selection / picking --------------------------------------------------
   let scene: SceneHandle | null = null;
   let environment: Environment | null = null;
   let model: { center: Vec3; radius: number } | null = null;
+  let pickIndex: PickIndex | null = null;
+  let meshNames: string[] = [];
+  let selection: PartSelection | null = null;
+  const selectionListeners = new Set<(s: PartSelection | null) => void>();
+
+  function setSelection(meshId: number | null) {
+    const next: PartSelection | null =
+      meshId !== null && meshId >= 0 && meshId < meshNames.length ? { meshId, name: meshNames[meshId] } : null;
+    if ((next?.meshId ?? null) === (selection?.meshId ?? null)) return;
+    selection = next;
+    scene?.setSelected(next?.meshId ?? null);
+    requestRender();
+    selectionListeners.forEach((l) => l(next));
+  }
+
+  function onTap(point: PointerPoint) {
+    if (!pickIndex) return;
+    const rect = host.getBoundingClientRect();
+    const ray = rayFromPixel(
+      controller.getState(),
+      rig.viewAngleRad,
+      rect.width,
+      rect.height,
+      point.x - rect.left,
+      point.y - rect.top,
+    );
+    setSelection(pickRay(pickIndex, ray)?.meshId ?? null); // empty space clears
+  }
+
+  const controller = createOrbitController(
+    host,
+    rig,
+    { target: [0, 0, 0], ...STANDARD_VIEWS.iso, distance: 10 },
+    onTap,
+  );
 
   const fitDistanceNow = (radius: number) => {
     const { width, height } = rig.viewportSize();
@@ -129,18 +173,23 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
   }
 
   function disposeContent() {
+    setSelection(null);
     scene?.dispose();
     environment?.dispose();
     scene = null;
     environment = null;
     model = null;
+    pickIndex = null;
+    meshNames = [];
     controller.setLimits(null);
   }
 
   return {
     setModel(next) {
       disposeContent();
-      scene = buildScene(next, renderer, theme.defaultPartColor);
+      scene = buildScene(next, renderer, theme.defaultPartColor, theme.selection);
+      pickIndex = buildPickIndex(next.meshes);
+      meshNames = next.meshes.map((m) => m.name);
       environment = buildEnvironment(next.bounds, renderer, theme);
 
       const { plan } = environment;
@@ -171,12 +220,26 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
       frame(STANDARD_VIEWS[view], true);
     },
 
+    selectMesh(meshId) {
+      setSelection(meshId);
+    },
+
+    getSelection() {
+      return selection;
+    },
+
+    onSelectionChange(listener) {
+      selectionListeners.add(listener);
+      return () => selectionListeners.delete(listener);
+    },
+
     onCameraChange(listener) {
       return controller.subscribe((s) => listener({ azimuth: s.azimuth, elevation: s.elevation }));
     },
 
     dispose() {
       disposed = true;
+      selectionListeners.clear();
       resizeObserver.disconnect();
       controller.dispose();
       disposeContent();

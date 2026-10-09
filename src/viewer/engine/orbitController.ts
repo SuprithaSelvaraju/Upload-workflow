@@ -28,6 +28,12 @@ export interface CameraRig {
   apply(state: OrbitState): void;
 }
 
+/** Pointer position in client (page viewport) coordinates. */
+export interface PointerPoint {
+  x: number;
+  y: number;
+}
+
 export interface OrbitLimits {
   targetMin: Vec3;
   targetMax: Vec3;
@@ -50,11 +56,19 @@ export interface OrbitController {
 type DragMode = 'orbit' | 'pan';
 
 const DEFAULT_ANIMATION_MS = 380;
+/** A left press that moves no more than this many pixels is a click, not an orbit. */
+const TAP_SLOP_PX = 4;
 
-export function createOrbitController(host: HTMLElement, rig: CameraRig, initial: OrbitState): OrbitController {
+export function createOrbitController(
+  host: HTMLElement,
+  rig: CameraRig,
+  initial: OrbitState,
+  /** Optional: called for a plain left click (no drag). Navigation is unaffected. */
+  onTap?: (point: PointerPoint) => void,
+): OrbitController {
   let state = initial;
   let limits: OrbitLimits | null = null;
-  let drag: { pointerId: number; mode: DragMode; x: number; y: number } | null = null;
+  let drag: { pointerId: number; mode: DragMode; x: number; y: number; startX: number; startY: number; moved: boolean } | null = null;
   let animationFrame = 0;
   const listeners = new Set<(s: OrbitState) => void>();
 
@@ -95,12 +109,13 @@ export function createOrbitController(host: HTMLElement, rig: CameraRig, initial
     e.preventDefault();
     cancelAnimation();
     host.setPointerCapture(e.pointerId);
-    drag = { pointerId: e.pointerId, mode, x: e.clientX, y: e.clientY };
+    drag = { pointerId: e.pointerId, mode, x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, moved: false };
     host.style.cursor = mode === 'pan' ? 'move' : 'grabbing';
   }
 
   function onPointerMove(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.pointerId) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > TAP_SLOP_PX) drag.moved = true;
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
     drag.x = e.clientX;
@@ -117,8 +132,10 @@ export function createOrbitController(host: HTMLElement, rig: CameraRig, initial
   function endDrag(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.pointerId) return;
     if (host.hasPointerCapture?.(e.pointerId)) host.releasePointerCapture(e.pointerId);
+    const isTap = e.type === 'pointerup' && drag.mode === 'orbit' && !drag.moved;
     drag = null;
     host.style.cursor = 'grab';
+    if (isTap) onTap?.({ x: e.clientX, y: e.clientY });
   }
 
   function onWheel(e: WheelEvent) {

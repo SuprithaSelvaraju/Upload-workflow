@@ -9,14 +9,27 @@ import type { Rgb, SceneModel } from '../../domain/sceneModel';
 export interface SceneHandle {
   /** Removes every actor from the renderer and frees all VTK objects. */
   dispose(): void;
+  /** Highlights one mesh (index into SceneModel.meshes); null clears the highlight. */
+  setSelected(meshId: number | null): void;
 }
+
+/** How far a selected part's colour is blended towards the selection accent, and its ambient boost. */
+const SELECTED_BLEND = 0.65;
+const SELECTED_AMBIENT = 0.32;
+const NORMAL_AMBIENT = 0.18;
 
 /**
  * The only place a SceneModel becomes VTK objects.
  * One polydata + mapper + actor per mesh, so per-part colour (and, in later
  * slices, picking and visibility) needs no restructuring.
  */
-export function buildScene(model: SceneModel, renderer: vtkRenderer, defaultColor: Rgb): SceneHandle {
+export function buildScene(
+  model: SceneModel,
+  renderer: vtkRenderer,
+  defaultColor: Rgb,
+  selectionColor: Rgb,
+): SceneHandle {
+  const baseColors: Rgb[] = [];
   const actors: vtkActor[] = [];
   const mappers: vtkMapper[] = [];
   const polyDatas: vtkPolyData[] = [];
@@ -41,12 +54,14 @@ export function buildScene(model: SceneModel, renderer: vtkRenderer, defaultColo
 
     const actor = vtkActor.newInstance();
     actor.setMapper(mapper);
-    const [r, g, b] = mesh.color ?? defaultColor;
+    const base: Rgb = mesh.color ?? defaultColor;
+    baseColors.push(base);
+    const [r, g, b] = base;
     const property = actor.getProperty();
     property.setColor(r, g, b);
     // Ambient is the "fill from everywhere" term (there is no ambient light); see lighting.ts.
     // Specular stays low: industrial paint and steel, not chrome.
-    property.setAmbient(0.18);
+    property.setAmbient(NORMAL_AMBIENT);
     property.setDiffuse(0.8);
     property.setSpecular(0.1);
     property.setSpecularPower(20);
@@ -57,7 +72,28 @@ export function buildScene(model: SceneModel, renderer: vtkRenderer, defaultColo
     polyDatas.push(polyData);
   }
 
+  let selected: number | null = null;
+
+  function paint(i: number, isSelected: boolean) {
+    const base = baseColors[i];
+    const t = isSelected ? SELECTED_BLEND : 0;
+    const property = actors[i].getProperty();
+    property.setColor(
+      base[0] + (selectionColor[0] - base[0]) * t,
+      base[1] + (selectionColor[1] - base[1]) * t,
+      base[2] + (selectionColor[2] - base[2]) * t,
+    );
+    property.setAmbient(isSelected ? SELECTED_AMBIENT : NORMAL_AMBIENT);
+  }
+
   return {
+    setSelected(meshId) {
+      const next = meshId !== null && meshId >= 0 && meshId < actors.length ? meshId : null;
+      if (next === selected) return;
+      if (selected !== null) paint(selected, false);
+      if (next !== null) paint(next, true);
+      selected = next;
+    },
     dispose() {
       for (const actor of actors) renderer.removeActor(actor);
       for (const actor of actors) actor.delete();

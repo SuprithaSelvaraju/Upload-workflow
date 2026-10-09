@@ -33,6 +33,7 @@
   --color-hud-muted: #8f8f98;      /* chosen */
   --color-part: #b9c0c7;           /* chosen: parts that carry no colour in the file */
   --color-brand-on-dark: #3fb8ad;  /* chosen: teal that stays legible on the dark canvas */
+  --color-selection: #3fb8ad;      /* chosen: selected-part tint in the 3D view (must be #rrggbb) */
 
   /* Floor under the model. Ground and grid fade into --color-canvas with distance. */
   --color-ground: #1e1e21;         /* chosen: a step lighter than the canvas */
