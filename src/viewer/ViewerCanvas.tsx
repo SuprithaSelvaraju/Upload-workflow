@@ -53,9 +53,11 @@ export const ViewerCanvas = forwardRef<ViewerHandle, Props>(function ViewerCanva
     });
     return () => {
       detach();
+      // Dispose first, still subscribed: the engine announces "selection cleared" so external
+      // listeners (future tree / info panel) never keep showing a part that no longer exists.
+      engine.dispose();
       detachSelection();
       selectionRef.current = null; // a new engine starts with nothing selected
-      engine.dispose();
       engineRef.current = null;
     };
   }, [theme]);

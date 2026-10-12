@@ -5,6 +5,7 @@ import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 import type vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
 import type { Rgb, SceneModel } from '../../domain/sceneModel';
+import { createSelectionHighlighter } from './selectionHighlighter';
 
 export interface SceneHandle {
   /** Removes every actor from the renderer and frees all VTK objects. */
@@ -29,12 +30,18 @@ export function buildScene(
   defaultColor: Rgb,
   selectionColor: Rgb,
 ): SceneHandle {
+  // Selection, picking and actors are all keyed by position in SceneModel.meshes.
+  // Checked up front so a bad model fails before any VTK object exists.
+  model.meshes.forEach((mesh, i) => {
+    if (mesh.id !== i) throw new Error(`SceneModel.meshes[${i}].id is ${mesh.id}; mesh ids must equal their index`);
+  });
+
   const baseColors: Rgb[] = [];
   const actors: vtkActor[] = [];
   const mappers: vtkMapper[] = [];
   const polyDatas: vtkPolyData[] = [];
 
-  for (const mesh of model.meshes) {
+  model.meshes.forEach((mesh) => {
     const polyData = vtkPolyData.newInstance();
 
     const points = vtkPoints.newInstance();
@@ -70,10 +77,9 @@ export function buildScene(
     actors.push(actor);
     mappers.push(mapper);
     polyDatas.push(polyData);
-  }
+  });
 
-  let selected: number | null = null;
-
+  /** Always derived from the immutable base colour, so highlighting is fully reversible. */
   function paint(i: number, isSelected: boolean) {
     const base = baseColors[i];
     const t = isSelected ? SELECTED_BLEND : 0;
@@ -86,15 +92,17 @@ export function buildScene(
     property.setAmbient(isSelected ? SELECTED_AMBIENT : NORMAL_AMBIENT);
   }
 
+  const highlighter = createSelectionHighlighter(actors.length, paint);
+  let disposed = false;
+
   return {
     setSelected(meshId) {
-      const next = meshId !== null && meshId >= 0 && meshId < actors.length ? meshId : null;
-      if (next === selected) return;
-      if (selected !== null) paint(selected, false);
-      if (next !== null) paint(next, true);
-      selected = next;
+      if (!disposed) highlighter.set(meshId);
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      highlighter.dispose();
       for (const actor of actors) renderer.removeActor(actor);
       for (const actor of actors) actor.delete();
       for (const mapper of mappers) mapper.delete();

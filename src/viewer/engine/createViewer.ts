@@ -6,7 +6,8 @@ import { buildScene, type SceneHandle } from './buildScene';
 import { buildEnvironment, type Environment } from './sceneEnvironment';
 import { createLighting } from './lighting';
 import { createOrbitController, type CameraRig, type PointerPoint } from './orbitController';
-import { buildPickIndex, pickRay, rayFromPixel, type PickIndex } from './picking';
+import { createHoverProbe, type HoverProbe } from './hoverProbe';
+import { buildPickIndex, createRay, pickRay, rayFromPixelInto, rayHitsAny, type PickIndex } from './picking';
 import {
   STANDARD_VIEWS,
   cameraPosition,
@@ -102,6 +103,9 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
 
   // Sphere that covers the model and the visible floor; sets the clipping planes.
   let clipSphere: { center: Vec3; radius: number } = { center: [0, 0, 0], radius: 1 };
+  // Clipping range of the last applied camera state: picking must not hit what the camera clips.
+  let clipNear = 0;
+  let clipFar = Infinity;
 
   const rig: CameraRig = {
     viewAngleRad: (VIEW_ANGLE_DEG * Math.PI) / 180,
@@ -116,6 +120,8 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
       camera.setViewUp(0, 0, 1); // world up never changes: the model stays upright
       const [near, far] = clippingRange(state, clipSphere.center, clipSphere.radius);
       camera.setClippingRange(near, far);
+      clipNear = near;
+      clipFar = far;
       requestRender();
     },
   };
@@ -136,28 +142,52 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
     selection = next;
     scene?.setSelected(next?.meshId ?? null);
     requestRender();
-    selectionListeners.forEach((l) => l(next));
+    // One misbehaving listener must neither break the others nor the click that triggered it.
+    selectionListeners.forEach((l) => {
+      try {
+        l(next);
+      } catch (error) {
+        console.error('selection listener failed', error);
+      }
+    });
   }
 
-  function onTap(point: PointerPoint) {
-    if (!pickIndex) return;
+  /** Reused for every click and hover probe: no per-event allocation. */
+  const pickRayScratch = createRay();
+  function rayAt(point: PointerPoint) {
     const rect = host.getBoundingClientRect();
-    const ray = rayFromPixel(
+    return rayFromPixelInto(
+      pickRayScratch,
       controller.getState(),
       rig.viewAngleRad,
       rect.width,
       rect.height,
       point.x - rect.left,
       point.y - rect.top,
+      clipNear,
+      clipFar,
     );
-    setSelection(pickRay(pickIndex, ray)?.meshId ?? null); // empty space clears
   }
+
+  function onTap(point: PointerPoint) {
+    if (!pickIndex) return;
+    setSelection(pickRay(pickIndex, rayAt(point))?.meshId ?? null); // empty space clears
+  }
+
+  // Hover only needs "is anything here?": any-hit query, coalesced to one per frame.
+  const hover: HoverProbe = createHoverProbe({
+    probe: (x, y) => (pickIndex ? rayHitsAny(pickIndex, rayAt({ x, y })) : false),
+    onResult: (over) => controller.setHoverTarget(over),
+    requestFrame: (cb) => requestAnimationFrame(cb),
+    cancelFrame: (h) => cancelAnimationFrame(h),
+    now: () => performance.now(),
+  });
 
   const controller = createOrbitController(
     host,
     rig,
     { target: [0, 0, 0], ...STANDARD_VIEWS.iso, distance: 10 },
-    onTap,
+    { onTap, onHover: (point) => hover.move(point) },
   );
 
   const fitDistanceNow = (radius: number) => {
@@ -174,6 +204,7 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
 
   function disposeContent() {
     setSelection(null);
+    hover.reset(); // old geometry is going away: no stale pointer cursor
     scene?.dispose();
     environment?.dispose();
     scene = null;
@@ -239,10 +270,11 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
 
     dispose() {
       disposed = true;
-      selectionListeners.clear();
       resizeObserver.disconnect();
+      hover.dispose();
       controller.dispose();
-      disposeContent();
+      disposeContent(); // notifies listeners that the selection is now null
+      selectionListeners.clear();
       lighting.dispose();
 
       const canvas = host.querySelector('canvas');
