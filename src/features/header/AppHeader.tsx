@@ -52,7 +52,7 @@ export function AppHeader({ state, onOpen }: { state: LoaderState; onOpen: () =>
           <ReadyStatus />
         ) : null}
         <button type="button" className={state.loaded ? secondaryButton : primaryButton} onClick={onOpen}>
-          {state.loaded ? 'Open another file' : 'Open STEP file'}
+          {state.loaded ? 'Open another file' : 'Open CAD file'}
         </button>
       </div>
     </header>

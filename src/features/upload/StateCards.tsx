@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { formatMegabytes } from '../../lib/format';
 import { config } from '../../config';
+import { supportedFormatsDescription } from '../../importers/registry';
 import type { LoadStage } from '../loader/useModelLoader';
 
 export const primaryButton =
@@ -38,11 +39,11 @@ export function DropCard({ onChoose }: { onChoose: () => void }) {
       <PlantGlyph />
       <h1 className="mt-4 text-lg font-semibold">Open a plant model</h1>
       <p className="mt-1.5 text-sm text-ink-muted">
-        Drop a STEP file (.step or .stp) anywhere on this window, or choose one from your computer.
+        Drop a CAD file anywhere on this window, or choose one from your computer. Supported: {supportedFormatsDescription}.
       </p>
       <div className="mt-5">
         <button type="button" className={primaryButton} onClick={onChoose}>
-          Choose STEP file
+          Choose file
         </button>
       </div>
       <p className="mt-5 border-t border-line pt-4 text-xs text-ink-muted">

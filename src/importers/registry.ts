@@ -6,6 +6,7 @@ const step: ImporterDescriptor = {
   extensions: ['.step', '.stp'],
   // ISO 10303-21 files start with the literal token "ISO-10303-21;".
   sniff: (head) => new TextDecoder('latin1').decode(head).toUpperCase().includes('ISO-10303-21'),
+  invalidContentHint: 'Check that it is a plain-text STEP file (ISO 10303-21). Renamed or compressed files are not supported.',
   load: async () => (await import('./step/stepImporter')).stepImporter,
 };
 
@@ -20,3 +21,7 @@ export function findImporter(fileName: string): ImporterDescriptor | undefined {
 export const acceptedExtensions: readonly string[] = importerRegistry.flatMap((d) => d.extensions);
 export const acceptAttribute = acceptedExtensions.join(',');
 export const supportedFormatsLabel = importerRegistry.map((d) => d.label).join(', ');
+/** "STEP (.step, .stp)" or "STEP (.step, .stp), IGES (.igs, .iges)": for user-facing copy. */
+export const supportedFormatsDescription = importerRegistry
+  .map((d) => `${d.label} (${d.extensions.join(', ')})`)
+  .join(', ');

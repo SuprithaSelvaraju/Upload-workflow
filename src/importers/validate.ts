@@ -26,7 +26,7 @@ export async function validateFile(file: File, descriptor: ImporterDescriptor): 
     throw new ImportError(
       'INVALID_CONTENT',
       `${file.name} has a ${descriptor.label} file name but does not contain ${descriptor.label} data.`,
-      'Check that it is a plain-text STEP file (ISO 10303-21). Renamed or compressed files are not supported.',
+      descriptor.invalidContentHint ?? 'Renamed or compressed files are not supported. Export the file again from the source tool.',
     );
   }
 }

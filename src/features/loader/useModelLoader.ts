@@ -1,15 +1,19 @@
 import { useCallback, useReducer, useRef, type RefObject } from 'react';
+import { buildModelIndex } from '../../domain/modelIndex';
 import type { LinearUnit, ModelStats } from '../../domain/sceneModel';
 import { ImportError, isAbortError, throwIfAborted, type ImportErrorPayload } from '../../importers/errors';
-import { findImporter, supportedFormatsLabel } from '../../importers/registry';
+import { findImporter, supportedFormatsDescription } from '../../importers/registry';
 import type { ImportStage } from '../../importers/types';
 import { validateFile } from '../../importers/validate';
 import type { ViewerHandle } from '../../viewer/ViewerCanvas';
+import type { ModelWorkspace } from '../../state/modelWorkspace';
 
 export type LoadStage = ImportStage | 'rendering';
 
 export interface LoadedInfo {
   fileName: string;
+  /** Human label of the source format ("STEP"), from the importer registry. */
+  formatLabel: string;
   stats: ModelStats;
   warnings: string[];
   loadMs: number;
@@ -67,7 +71,7 @@ function toPayload(e: unknown): ImportErrorPayload {
   };
 }
 
-export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
+export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>, workspace: ModelWorkspace) {
   const [state, dispatch] = useReducer(reducer, initial);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -79,6 +83,7 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
       const { signal } = controller;
       const startedAt = performance.now();
 
+      let sceneReplaced = false; // true once the viewer's old scene has been torn down
       dispatch({ type: 'start', fileName: file.name });
       try {
         const descriptor = findImporter(file.name);
@@ -86,7 +91,7 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
           throw new ImportError(
             'UNSUPPORTED_FORMAT',
             `${file.name} is not a file type this viewer opens yet.`,
-            `Choose a ${supportedFormatsLabel} file (.step or .stp).`,
+            `Choose one of: ${supportedFormatsDescription}.`,
           );
         }
         await validateFile(file, descriptor);
@@ -103,11 +108,18 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
         await nextPaint(); // let the "preparing" state paint before the synchronous scene build
         throwIfAborted(signal);
 
+        // Derive the explorer data first: if it fails, the model already on screen is untouched.
+        const index = buildModelIndex(model);
+        sceneReplaced = true;
         const sceneInfo = viewerRef.current?.setModel(model);
+        // The new scene starts with nothing selected and everything visible; the workspace now
+        // matches, so no selection or visibility from the previous model can survive.
+        workspace.load(index);
         dispatch({
           type: 'ready',
           info: {
             fileName: file.name,
+            formatLabel: descriptor.label,
             stats: model.stats,
             warnings: model.warnings,
             loadMs: performance.now() - startedAt,
@@ -117,10 +129,11 @@ export function useModelLoader(viewerRef: RefObject<ViewerHandle | null>) {
         });
       } catch (e) {
         if (isAbortError(e)) return; // cancelled, or superseded by a newer file
+        if (sceneReplaced) workspace.clear(); // the old scene is gone: do not keep a tree for it
         dispatch({ type: 'fail', error: toPayload(e) });
       }
     },
-    [viewerRef],
+    [viewerRef, workspace],
   );
 
   const cancel = useCallback(() => {

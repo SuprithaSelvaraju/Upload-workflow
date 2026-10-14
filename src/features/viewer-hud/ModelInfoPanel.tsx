@@ -18,7 +18,7 @@ export function ModelInfoPanel({ info }: { info: LoadedInfo }) {
       aria-label="Model information"
       className="pointer-events-none absolute left-4 top-4 w-60 rounded-md border border-hud-line bg-hud/90 px-3.5 py-3 text-xs"
     >
-      <p className="text-hud-muted">STEP model</p>
+      <p className="text-hud-muted">{info.formatLabel} model</p>
       <p className="mt-0.5 truncate text-sm font-medium text-hud-ink" title={info.fileName}>
         {info.fileName}
       </p>

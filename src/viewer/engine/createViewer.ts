@@ -7,7 +7,7 @@ import { buildEnvironment, type Environment } from './sceneEnvironment';
 import { createLighting } from './lighting';
 import { createOrbitController, type CameraRig, type PointerPoint } from './orbitController';
 import { createHoverProbe, type HoverProbe } from './hoverProbe';
-import { buildPickIndex, createRay, pickRay, rayFromPixelInto, rayHitsAny, type PickIndex } from './picking';
+import { buildPickIndex, createRay, pickRay, rayFromPixelInto, rayHitsAny, setPickHidden, type PickIndex } from './picking';
 import {
   STANDARD_VIEWS,
   cameraPosition,
@@ -28,12 +28,6 @@ export interface ViewerTheme {
   selection: Rgb;
 }
 
-/** The part the user picked. `meshId` indexes SceneModel.meshes. */
-export interface PartSelection {
-  meshId: number;
-  name: string;
-}
-
 /** What the viewer tells the UI about the scene it just built. */
 export interface SceneInfo {
   /** Minor grid spacing, in the model's units. */
@@ -49,11 +43,18 @@ export interface ViewerEngine {
   setStandardView(view: StandardView): void;
   /** Called on every camera change, with the angles the axis triad needs. */
   onCameraChange(listener: (angles: ViewAngles) => void): () => void;
-  /** Select a mesh programmatically (null clears). Fires onSelectionChange like a click does. */
-  selectMesh(meshId: number | null): void;
-  getSelection(): PartSelection | null;
-  /** Fires when the selection changes: by click on a part, click on empty space, or selectMesh. */
-  onSelectionChange(listener: (selection: PartSelection | null) => void): () => void;
+  /**
+   * Mirror the workspace selection: highlight exactly these meshes (ids = SceneModel.meshes
+   * indices). The viewer keeps no selection of its own; it only draws what it is told.
+   */
+  setHighlightedMeshes(meshIds: readonly number[]): void;
+  /** Mirror the workspace visibility: one byte per mesh, 1 = hidden. Hidden meshes are not drawn, picked or hovered. */
+  setHiddenMeshes(mask: Uint8Array): void;
+  /**
+   * Fires on a plain click: the picked mesh id, or null for empty space. The viewer does not
+   * change its own highlight; whoever owns selection decides what the click means.
+   */
+  onPick(listener: (meshId: number | null) => void): () => void;
   dispose(): void;
 }
 
@@ -126,28 +127,20 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
     },
   };
 
-  // ---- selection / picking --------------------------------------------------
+  // ---- picking / mirrored state ---------------------------------------------
   let scene: SceneHandle | null = null;
   let environment: Environment | null = null;
   let model: { center: Vec3; radius: number } | null = null;
   let pickIndex: PickIndex | null = null;
-  let meshNames: string[] = [];
-  let selection: PartSelection | null = null;
-  const selectionListeners = new Set<(s: PartSelection | null) => void>();
+  const pickListeners = new Set<(meshId: number | null) => void>();
 
-  function setSelection(meshId: number | null) {
-    const next: PartSelection | null =
-      meshId !== null && meshId >= 0 && meshId < meshNames.length ? { meshId, name: meshNames[meshId] } : null;
-    if ((next?.meshId ?? null) === (selection?.meshId ?? null)) return;
-    selection = next;
-    scene?.setSelected(next?.meshId ?? null);
-    requestRender();
+  function emitPick(meshId: number | null) {
     // One misbehaving listener must neither break the others nor the click that triggered it.
-    selectionListeners.forEach((l) => {
+    pickListeners.forEach((l) => {
       try {
-        l(next);
+        l(meshId);
       } catch (error) {
-        console.error('selection listener failed', error);
+        console.error('pick listener failed', error);
       }
     });
   }
@@ -171,7 +164,7 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
 
   function onTap(point: PointerPoint) {
     if (!pickIndex) return;
-    setSelection(pickRay(pickIndex, rayAt(point))?.meshId ?? null); // empty space clears
+    emitPick(pickRay(pickIndex, rayAt(point))?.meshId ?? null); // null = empty space
   }
 
   // Hover only needs "is anything here?": any-hit query, coalesced to one per frame.
@@ -203,7 +196,6 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
   }
 
   function disposeContent() {
-    setSelection(null);
     hover.reset(); // old geometry is going away: no stale pointer cursor
     scene?.dispose();
     environment?.dispose();
@@ -211,7 +203,6 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
     environment = null;
     model = null;
     pickIndex = null;
-    meshNames = [];
     controller.setLimits(null);
   }
 
@@ -220,7 +211,6 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
       disposeContent();
       scene = buildScene(next, renderer, theme.defaultPartColor, theme.selection);
       pickIndex = buildPickIndex(next.meshes);
-      meshNames = next.meshes.map((m) => m.name);
       environment = buildEnvironment(next.bounds, renderer, theme);
 
       const { plan } = environment;
@@ -251,17 +241,22 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
       frame(STANDARD_VIEWS[view], true);
     },
 
-    selectMesh(meshId) {
-      setSelection(meshId);
+    setHighlightedMeshes(meshIds) {
+      scene?.setHighlighted(meshIds);
+      requestRender();
     },
 
-    getSelection() {
-      return selection;
+    setHiddenMeshes(mask) {
+      if (!scene || !pickIndex) return;
+      scene.setHidden(mask);
+      setPickHidden(pickIndex, mask);
+      hover.reset(); // what is under a still cursor may have changed: no stale pointer cursor
+      requestRender();
     },
 
-    onSelectionChange(listener) {
-      selectionListeners.add(listener);
-      return () => selectionListeners.delete(listener);
+    onPick(listener) {
+      pickListeners.add(listener);
+      return () => pickListeners.delete(listener);
     },
 
     onCameraChange(listener) {
@@ -273,8 +268,8 @@ export function createViewer(host: HTMLElement, theme: ViewerTheme): ViewerEngin
       resizeObserver.disconnect();
       hover.dispose();
       controller.dispose();
-      disposeContent(); // notifies listeners that the selection is now null
-      selectionListeners.clear();
+      disposeContent();
+      pickListeners.clear();
       lighting.dispose();
 
       const canvas = host.querySelector('canvas');

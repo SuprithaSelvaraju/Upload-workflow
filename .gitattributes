@@ -1,0 +1,5 @@
+# One line-ending convention in the repo, whatever the developer's OS.
+* text=auto eol=lf
+*.wasm binary
+*.step binary
+*.stp binary

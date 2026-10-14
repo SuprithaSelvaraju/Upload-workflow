@@ -1,11 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { SceneModel } from '../domain/sceneModel';
-import { createViewer, type PartSelection, type SceneInfo, type ViewerEngine, type ViewerTheme } from './engine/createViewer';
+import { createViewer, type SceneInfo, type ViewerEngine, type ViewerTheme } from './engine/createViewer';
 import type { StandardView, ViewAngles } from './engine/orbitMath';
 
 export type CameraListener = (angles: ViewAngles) => void;
-export type SelectionListener = (selection: PartSelection | null) => void;
-export type { PartSelection };
+/** Mesh id picked by a click, or null for empty space. */
+export type PickListener = (meshId: number | null) => void;
 
 export interface ViewerHandle {
   setModel(model: SceneModel): SceneInfo | null;
@@ -14,12 +14,12 @@ export interface ViewerHandle {
   setStandardView(view: StandardView): void;
   /** Subscribe to camera changes. Survives the engine being re-created (StrictMode). */
   subscribeCamera(listener: CameraListener): () => void;
-  /** The currently selected part, or null. */
-  getSelection(): PartSelection | null;
-  /** Select a part by mesh index (SceneModel.meshes), or null to clear. */
-  selectMesh(meshId: number | null): void;
-  /** Fires when the selection changes. Survives the engine being re-created (StrictMode). */
-  subscribeSelection(listener: SelectionListener): () => void;
+  /** Highlight exactly these meshes (SceneModel.meshes ids). The viewer owns no selection state. */
+  setHighlightedMeshes(meshIds: readonly number[]): void;
+  /** One byte per mesh, 1 = hidden: not drawn, not pickable. */
+  setHiddenMeshes(mask: Uint8Array): void;
+  /** Fires on a click with the picked mesh id (null = empty space). Survives engine re-creation (StrictMode). */
+  subscribePick(listener: PickListener): () => void;
 }
 
 interface Props {
@@ -36,8 +36,7 @@ export const ViewerCanvas = forwardRef<ViewerHandle, Props>(function ViewerCanva
   const engineRef = useRef<ViewerEngine | null>(null);
   // Listeners live here, not in the engine, so they outlive an engine re-creation.
   const listenersRef = useRef(new Set<CameraListener>());
-  const selectionListenersRef = useRef(new Set<SelectionListener>());
-  const selectionRef = useRef<PartSelection | null>(null);
+  const pickListenersRef = useRef(new Set<PickListener>());
   const lastAnglesRef = useRef<ViewAngles | null>(null);
 
   useEffect(() => {
@@ -47,17 +46,13 @@ export const ViewerCanvas = forwardRef<ViewerHandle, Props>(function ViewerCanva
       lastAnglesRef.current = angles;
       listenersRef.current.forEach((listener) => listener(angles));
     });
-    const detachSelection = engine.onSelectionChange((selection) => {
-      selectionRef.current = selection;
-      selectionListenersRef.current.forEach((listener) => listener(selection));
+    const detachPick = engine.onPick((meshId) => {
+      pickListenersRef.current.forEach((listener) => listener(meshId));
     });
     return () => {
       detach();
-      // Dispose first, still subscribed: the engine announces "selection cleared" so external
-      // listeners (future tree / info panel) never keep showing a part that no longer exists.
+      detachPick();
       engine.dispose();
-      detachSelection();
-      selectionRef.current = null; // a new engine starts with nothing selected
       engineRef.current = null;
     };
   }, [theme]);
@@ -69,11 +64,11 @@ export const ViewerCanvas = forwardRef<ViewerHandle, Props>(function ViewerCanva
       clearModel: () => engineRef.current?.clearModel(),
       fit: () => engineRef.current?.fit(),
       setStandardView: (view) => engineRef.current?.setStandardView(view),
-      getSelection: () => selectionRef.current,
-      selectMesh: (meshId) => engineRef.current?.selectMesh(meshId),
-      subscribeSelection: (listener) => {
-        selectionListenersRef.current.add(listener);
-        return () => selectionListenersRef.current.delete(listener);
+      setHighlightedMeshes: (meshIds) => engineRef.current?.setHighlightedMeshes(meshIds),
+      setHiddenMeshes: (mask) => engineRef.current?.setHiddenMeshes(mask),
+      subscribePick: (listener) => {
+        pickListenersRef.current.add(listener);
+        return () => pickListenersRef.current.delete(listener);
       },
       subscribeCamera: (listener) => {
         listenersRef.current.add(listener);

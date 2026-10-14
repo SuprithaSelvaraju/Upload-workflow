@@ -1,7 +1,7 @@
 /** Offline checks for Slice 1.2 hardening. Run: npx tsx scripts/hardening.check.ts */
 import assert from 'node:assert/strict';
 import type { MeshData } from '../src/domain/sceneModel';
-import { BVH_MIN_TRIANGLES, buildPickIndex, createRay, pickRay, rayFromPixelInto, rayHitsAny, type Ray } from '../src/viewer/engine/picking';
+import { BVH_MIN_TRIANGLES, buildPickIndex, createRay, pickRay, rayFromPixelInto, rayHitsAny, setPickHidden, type Ray } from '../src/viewer/engine/picking';
 import { STANDARD_VIEWS, type OrbitState } from '../src/viewer/engine/orbitMath';
 import { createOrbitController, type CameraRig } from '../src/viewer/engine/orbitController';
 import { createHoverProbe } from '../src/viewer/engine/hoverProbe';
@@ -142,17 +142,45 @@ function harness(cost: () => number) {
 
 // ---- highlighter: reversible, no accumulation ----
 {
-  const log: string[] = []; const painted = new Map<number, boolean>();
-  const hl = createSelectionHighlighter(5, (i, on) => { log.push(`${i}:${on}`); painted.set(i, on); });
+  const painted = new Map<number, boolean>(); let paints = 0;
+  const hl = createSelectionHighlighter(5, (i, on) => { paints++; painted.set(i, on); });
   assert.equal(hl.set(2), true); assert.equal(hl.set(2), false, 'same id is a no-op');
   assert.equal(hl.set(4), true);
   assert.equal(painted.get(2), false, 'previous selection restored'); assert.equal(painted.get(4), true);
   for (let k = 0; k < 1000; k++) hl.set(k % 5);
   const on = [...painted].filter(([, v]) => v).map(([i]) => i);
-  assert.equal(on.length, 1, 'exactly one painted-on mesh after 1000 selections'); assert.equal(on[0], hl.current);
-  hl.set(99); assert.equal(hl.current, null, 'out of range clears');
-  hl.set(1.5 as number); assert.equal(hl.current, null, 'non-integer ignored');
+  assert.equal(on.length, 1, 'exactly one painted-on mesh after 1000 selections'); assert.deepEqual(on, [...hl.selected]);
+  hl.set(99); assert.equal(hl.selected.size, 0, 'out of range clears');
+  hl.set(1.5 as number); assert.equal(hl.selected.size, 0, 'non-integer ignored');
+  // multi-mesh (group selection): only the difference is repainted
+  hl.setMany([0, 1, 2]); paints = 0;
+  assert.equal(hl.setMany([1, 2, 3]), true); assert.equal(paints, 2, 'moving a selection repaints only what changed (0 off, 3 on)');
+  assert.deepEqual([...painted].filter(([, v]) => v).map(([i]) => i).sort(), [1, 2, 3]);
+  assert.equal(hl.setMany([3, 2, 1, 1]), false, 'same set in a different order is a no-op');
+  hl.setMany([]); assert.ok([...painted.values()].every((v) => !v), 'clearing restores every mesh');
   hl.set(3); hl.dispose(); assert.equal(hl.set(1), false, 'inert after dispose');
+}
+
+// ---- hidden meshes are not pickable or hoverable ----
+{
+  const front = quad(0, 0), back = quad(1, -10);
+  const idx = buildPickIndex([front, back]);
+  const r = ray([0, 0, 10], [0, 0, -1]);
+  assert.equal(pickRay(idx, r)?.meshId, 0);
+  setPickHidden(idx, new Uint8Array([1, 0]));
+  assert.equal(pickRay(idx, r)?.meshId, 1, 'ray passes through a hidden mesh to the one behind');
+  assert.equal(rayHitsAny(idx, r), true);
+  setPickHidden(idx, new Uint8Array([1, 1]));
+  assert.equal(pickRay(idx, r), null, 'all hidden: nothing to pick'); assert.equal(rayHitsAny(idx, r), false, 'and nothing to hover');
+  setPickHidden(idx, new Uint8Array([0]));  // wrong length: ignored
+  assert.equal(pickRay(idx, r), null, 'a mask for a different mesh count is ignored');
+  setPickHidden(idx, new Uint8Array([0, 0]));
+  assert.equal(pickRay(idx, r)?.meshId, 0, 'showing again makes it pickable');
+  // BVH path honours the mask as well
+  const sph = buildPickIndex([sphere(0, [0, 0, 0], 5, 60), sphere(1, [0, 0, 0], 3, 30)]);
+  const sr = ray([0, 0.01, 20], [0, 0, -1]);
+  assert.equal(pickRay(sph, sr)?.meshId, 0); setPickHidden(sph, new Uint8Array([1, 0]));
+  assert.equal(pickRay(sph, sr)?.meshId, 1, 'large (BVH) mesh can be hidden too');
 }
 
 // ---- controller: hover, cursor, stale drag, touch slop ----

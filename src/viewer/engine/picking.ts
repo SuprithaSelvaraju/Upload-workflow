@@ -46,6 +46,8 @@ export interface PickIndex {
   boxMax: Float64Array;
   /** Lazy per-mesh triangle BVHs (null until needed, or for small meshes). */
   bvh: (Bvh | null | undefined)[];
+  /** One byte per mesh: 1 = hidden, skipped by every query (hidden geometry cannot be picked or hovered). */
+  hidden: Uint8Array;
   scratch: Scratch;
 }
 
@@ -110,6 +112,7 @@ export function buildPickIndex(meshes: readonly MeshData[]): PickIndex {
     boxMin,
     boxMax,
     bvh: new Array(meshes.length),
+    hidden: new Uint8Array(meshes.length),
     scratch: {
       heapKey: new Float64Array(Math.max(meshes.length, 1)),
       heapId: new Int32Array(Math.max(meshes.length, 1)),
@@ -118,6 +121,11 @@ export function buildPickIndex(meshes: readonly MeshData[]): PickIndex {
       stackKey: new Float64Array(STACK_SIZE),
     },
   };
+}
+
+/** Copies a hidden mask (1 = hidden) into the index. Ignores a mask for a different mesh count. */
+export function setPickHidden(index: PickIndex, mask: Uint8Array): void {
+  if (mask.length === index.hidden.length) index.hidden.set(mask);
 }
 
 /** Pre-allocated ray for hot paths: fill it with `rayFromPixelInto`, reuse it forever. */
@@ -466,6 +474,7 @@ export function pickRay(index: PickIndex, ray: Ray): PickHit | null {
 
   scratch.heapSize = 0;
   for (let i = 0; i < index.meshes.length; i++) {
+    if (index.hidden[i] === 1) continue;
     const o = i * 3;
     const enter = slab(ox, oy, oz, dx, dy, dz, boxMin[o], boxMin[o + 1], boxMin[o + 2], boxMax[o], boxMax[o + 1], boxMax[o + 2], tMin, tMax);
     if (enter >= 0) heapPush(scratch, enter, i);
@@ -495,6 +504,7 @@ export function rayHitsAny(index: PickIndex, ray: Ray): boolean {
   const tMax = ray.tMax ?? Infinity;
   const { boxMin, boxMax } = index;
   for (let i = 0; i < index.meshes.length; i++) {
+    if (index.hidden[i] === 1) continue;
     const o = i * 3;
     const enter = slab(ox, oy, oz, dx, dy, dz, boxMin[o], boxMin[o + 1], boxMin[o + 2], boxMax[o], boxMax[o + 1], boxMax[o + 2], tMin, tMax);
     if (enter < 0) continue;

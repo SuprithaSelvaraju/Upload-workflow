@@ -24,5 +24,7 @@ export interface ImporterDescriptor {
   extensions: readonly string[];
   /** True when the first bytes of the file look like this format. */
   sniff(head: Uint8Array): boolean;
+  /** What to tell the user when the content does not match the file name. Falls back to a generic line. */
+  invalidContentHint?: string;
   load(): Promise<Importer>;
 }

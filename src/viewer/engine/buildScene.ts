@@ -10,8 +10,10 @@ import { createSelectionHighlighter } from './selectionHighlighter';
 export interface SceneHandle {
   /** Removes every actor from the renderer and frees all VTK objects. */
   dispose(): void;
-  /** Highlights one mesh (index into SceneModel.meshes); null clears the highlight. */
-  setSelected(meshId: number | null): void;
+  /** Highlights exactly these meshes (ids = indices into SceneModel.meshes); [] clears the highlight. */
+  setHighlighted(meshIds: readonly number[]): void;
+  /** Shows/hides meshes: one byte per mesh, 1 = hidden. A mask of the wrong length is ignored. */
+  setHidden(mask: Uint8Array): void;
 }
 
 /** How far a selected part's colour is blended towards the selection accent, and its ambient boost. */
@@ -93,11 +95,21 @@ export function buildScene(
   }
 
   const highlighter = createSelectionHighlighter(actors.length, paint);
+  const hiddenNow = new Uint8Array(actors.length); // what the actors currently show
   let disposed = false;
 
   return {
-    setSelected(meshId) {
-      if (!disposed) highlighter.set(meshId);
+    setHighlighted(meshIds) {
+      if (!disposed) highlighter.setMany(meshIds);
+    },
+    setHidden(mask) {
+      if (disposed || mask.length !== hiddenNow.length) return;
+      for (let i = 0; i < mask.length; i++) {
+        if (mask[i] !== hiddenNow[i]) {
+          hiddenNow[i] = mask[i];
+          actors[i].setVisibility(mask[i] !== 1);
+        }
+      }
     },
     dispose() {
       if (disposed) return;

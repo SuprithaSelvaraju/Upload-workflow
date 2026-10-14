@@ -18,3 +18,12 @@ const unitSymbols: Record<string, string> = { millimeter: 'mm', centimeter: 'cm'
 export function formatLength(value: number, unit: string): string {
   return `${Number(value.toPrecision(3))} ${unitSymbols[unit] ?? unit}`;
 }
+
+/** "120 × 40 × 10 mm": overall extents with one unit symbol. */
+export function formatExtents(size: readonly [number, number, number], unit: string): string {
+  return `${size.map((v) => Number(v.toPrecision(3))).join(' × ')} ${unitSymbols[unit] ?? unit}`;
+}
+
+export function unitSymbol(unit: string): string {
+  return unitSymbols[unit] ?? unit;
+}

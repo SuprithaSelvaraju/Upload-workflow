@@ -2,6 +2,17 @@
  * The neutral contract between importers and the viewer.
  * Importers produce a SceneModel; the viewer consumes one. Neither side knows
  * about the other's library (OCCT / VTK), only about this file.
+ *
+ * Rules every importer must satisfy (the viewer relies on them and does not convert):
+ *   1. Coordinates are in `units`, right-handed, with +Z up. The camera, grid and standard
+ *      views are Z-up; a Y-up source (OBJ, glTF) must be rotated by its importer.
+ *   2. `meshes[i].id === i`. Selection, picking and rendering are all keyed by that index.
+ *   3. Every position is finite, and `bounds` is the exact box of all positions.
+ *   4. Positions are float32. Precision is about 1 mm at 10 km from the origin and 8 mm at
+ *      100 km, so a model far from the origin should be re-centred by its importer.
+ *      (There is no origin / georeference field yet: add one with the first importer that needs it.)
+ *   5. `units` says what one coordinate unit means. Formats with no units (STL, OBJ) have no
+ *      honest value to put here yet: see the "unitless" note on `units`.
  */
 
 /** Extend as importers are added: 'iges' | 'ifc' | 'rvm' … */
@@ -51,6 +62,12 @@ export interface ModelStats {
 export interface SceneModel {
   format: SourceFormat;
   sourceName: string;
+  /**
+   * Unit of every coordinate. STEP: always 'meter' (the importer asks OCCT to convert).
+   * Unitless formats (STL, OBJ) cannot state this truthfully with the current type; when the
+   * first one is added, extend this with a provenance ('declared' | 'assumed') so the UI can
+   * ask the user instead of silently guessing a scale.
+   */
   units: LinearUnit;
   bounds: Bounds;
   root: PartNode;
