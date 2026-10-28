@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# Large generated OCCT build and install logs are excluded from Git.
+ingest-engine/build/records/**/build.log
+ingest-engine/build/records/**/install.log

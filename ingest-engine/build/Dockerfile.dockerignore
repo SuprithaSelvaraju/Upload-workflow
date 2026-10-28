@@ -1,0 +1,4 @@
+*
+!ingest-engine/build/
+ingest-engine/build/records
+ingest-engine/build/_work

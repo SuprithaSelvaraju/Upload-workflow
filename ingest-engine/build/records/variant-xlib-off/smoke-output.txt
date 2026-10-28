@@ -1,0 +1,15 @@
+OCCT version: 8.0.1
+PASS  STEP (STEPCAFControl_Reader) rejects missing file
+[32;1mFile not found : /nonexistent/agni_n0_missing_file
+[0m
+PASS  IGES (IGESCAFControl_Reader) rejects missing file
+PASS  BREP (BRepTools::Read) rejects missing file
+PASS  BREP binary (BinTools::Read) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  STL (RWStl::ReadFile) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  OBJ (RWObj_CafReader) rejects missing file
+[31;1mFile '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  glTF (RWGltf_CafReader) rejects missing file
+PASS  BREP round trip of a box (write, read) runs headless
+RESULT: all checks passed

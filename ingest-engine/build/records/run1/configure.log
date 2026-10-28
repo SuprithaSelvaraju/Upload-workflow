@@ -1,0 +1,29 @@
+loading initial cache file /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/occt-engine-options.cmake
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Info: Xlib is used by OCCT
+-- Info: FreeType is used by OCCT
+-- Found Freetype: /usr/lib/x86_64-linux-gnu/libfreetype.so (found version "2.13.2") 
+-- Info: The directories of 3rdparty headers: 
+	/usr/include/freetype2
+	/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work/rapidjson/include
+-- Info: The directories of 3rdparty libraries: 
+	/usr/lib/x86_64-linux-gnu
+-- 
+Info: (19:54:28) Start collecting all OCCT header files into /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work/build/include/opencascade ...
+-- Info: (19:54:30) End the collecting
+-- Info: Used native memory manager
+-- Info: (19:54:30) OCCT configuration files prepared
+-- Configuring done (3.4s)
+-- Generating done (0.2s)
+-- Build files have been written to: /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work/build

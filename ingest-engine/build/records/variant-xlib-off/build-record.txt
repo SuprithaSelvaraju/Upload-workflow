@@ -1,0 +1,133 @@
+== N0 build record: variant-xlib-off
+start: 2026-10-20T08:05:22Z
+host: Linux 6.18.44-fc-v139 x86_64; Ubuntu 24.04.5 LTS
+cpus: 2; mem: 8029 MiB
+tools: cmake version 3.28.3; g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; ninja 1.11.1
+== stage 1: fetch and verify pins
+Cloning into '/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/OCCT'...
+Note: switching to 'b8f597c677811d1f9f4d8a97f5ae2825c0353a42'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+Updating files:  36% (13002/35413)Updating files:  37% (13103/35413)Updating files:  38% (13457/35413)Updating files:  39% (13812/35413)Updating files:  40% (14166/35413)Updating files:  41% (14520/35413)Updating files:  42% (14874/35413)Updating files:  43% (15228/35413)Updating files:  44% (15582/35413)Updating files:  45% (15936/35413)Updating files:  46% (16290/35413)Updating files:  47% (16645/35413)Updating files:  48% (16999/35413)Updating files:  49% (17353/35413)Updating files:  50% (17707/35413)Updating files:  51% (18061/35413)Updating files:  52% (18415/35413)Updating files:  53% (18769/35413)Updating files:  54% (19124/35413)Updating files:  55% (19478/35413)Updating files:  56% (19832/35413)Updating files:  57% (20186/35413)Updating files:  58% (20540/35413)Updating files:  59% (20894/35413)Updating files:  60% (21248/35413)Updating files:  61% (21602/35413)Updating files:  62% (21957/35413)Updating files:  63% (22311/35413)Updating files:  64% (22665/35413)Updating files:  65% (23019/35413)Updating files:  66% (23373/35413)Updating files:  67% (23727/35413)Updating files:  68% (24081/35413)Updating files:  69% (24435/35413)Updating files:  70% (24790/35413)Updating files:  71% (25144/35413)Updating files:  72% (25498/35413)Updating files:  73% (25852/35413)Updating files:  74% (26206/35413)Updating files:  75% (26560/35413)Updating files:  76% (26914/35413)Updating files:  77% (27269/35413)Updating files:  78% (27623/35413)Updating files:  79% (27977/35413)Updating files:  80% (28331/35413)Updating files:  81% (28685/35413)Updating files:  82% (29039/35413)Updating files:  83% (29393/35413)Updating files:  84% (29747/35413)Updating files:  85% (30102/35413)Updating files:  86% (30456/35413)Updating files:  87% (30810/35413)Updating files:  88% (31164/35413)Updating files:  89% (31518/35413)Updating files:  90% (31872/35413)Updating files:  91% (32226/35413)Updating files:  92% (32580/35413)Updating files:  93% (32935/35413)Updating files:  94% (33289/35413)Updating files:  95% (33643/35413)Updating files:  96% (33997/35413)Updating files:  97% (34351/35413)Updating files:  98% (34705/35413)Updating files:  99% (35059/35413)Updating files: 100% (35413/35413)Updating files: 100% (35413/35413), done.
+/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/OCCT: tag=V8_0_1 commit=b8f597c677811d1f9f4d8a97f5ae2825c0353a42
+Cloning into '/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/rapidjson-src'...
+Note: switching to 'f54b0e47a08782a6131cc3d60f94d038fa6e0a51'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/rapidjson-src: tag=v1.1.0 commit=f54b0e47a08782a6131cc3d60f94d038fa6e0a51
+stage 1 seconds: 10
+== stage 2: configure (extra args: -D USE_XLIB=OFF)
+loading initial cache file /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/occt-engine-options.cmake
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Info: FreeType is used by OCCT
+-- Found Freetype: /usr/lib/x86_64-linux-gnu/libfreetype.so (found version "2.13.2") 
+-- Info: The directories of 3rdparty headers: 
+	/usr/include/freetype2
+	/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/rapidjson/include
+-- Info: The directories of 3rdparty libraries: 
+	/usr/lib/x86_64-linux-gnu
+-- 
+Info: (08:05:33) Start collecting all OCCT header files into /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work3/build/include/opencascade ...
+-- Info: (08:05:35) End the collecting
+-- Info: Used native memory manager
+-- Info: (08:05:35) OCCT configuration files prepared
+-- Configuring done (4.1s)
+-- Generating done (0.3s)
+-- Build files have been written to: /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work3/build
+stage 2 seconds: 5
+== stage 3: build (2 jobs)
+stage 3 seconds: 2950
+warnings: 3  errors: 0
+== stage 4: install
+stage 4 seconds: 1
+bin
+include
+lib
+share
+112M	/tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/repo/ingest-engine/build/../../../n0/work3/install
+built toolkits: 41
+== stage 5: link and run the headless check (no DISPLAY)
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/claude-0/-home-claude/59fee36b-e062-5acd-bd0e-603c94a70c8c/scratchpad/n0/work3/smoke-build
+[1/2] Building CXX object CMakeFiles/reader_link_check.dir/reader_link_check.cxx.o
+[2/2] Linking CXX executable reader_link_check
+-- ldd (direct, filtered)
+	/lib64/ld-linux-x86-64.so.2 
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 
+	linux-vdso.so.1 
+OCCT version: 8.0.1
+PASS  STEP (STEPCAFControl_Reader) rejects missing file
+[32;1mFile not found : /nonexistent/agni_n0_missing_file
+[0m
+PASS  IGES (IGESCAFControl_Reader) rejects missing file
+PASS  BREP (BRepTools::Read) rejects missing file
+PASS  BREP binary (BinTools::Read) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  STL (RWStl::ReadFile) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  OBJ (RWObj_CafReader) rejects missing file
+[31;1mFile '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  glTF (RWGltf_CafReader) rejects missing file
+PASS  BREP round trip of a box (write, read) runs headless
+RESULT: all checks passed
+smoke exit code: 0
+stage 5 seconds: 2
+-- toolkit shared-library dependencies on non-OCCT system libraries (all built toolkits)
+libbrotlicommon.so.1 => /lib/x86_64-linux-gnu/libbrotlicommon.so.1 
+libbrotlidec.so.1 => /lib/x86_64-linux-gnu/libbrotlidec.so.1 
+libbz2.so.1.0 => /lib/x86_64-linux-gnu/libbz2.so.1.0 
+libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 
+libexpat.so.1 => /lib/x86_64-linux-gnu/libexpat.so.1 
+libfontconfig.so.1 => /lib/x86_64-linux-gnu/libfontconfig.so.1 
+libfreetype.so.6 => /lib/x86_64-linux-gnu/libfreetype.so.6 
+libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 
+libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 
+libpng16.so.16 => /lib/x86_64-linux-gnu/libpng16.so.16 
+libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 
+libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 
+end: 2026-10-20T08:54:50Z; total seconds: 2968

@@ -1,0 +1,41 @@
+﻿DISPLAY=[] WAYLAND_DISPLAY=[]
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+NAME="Ubuntu"
+--- smoke run in a fresh container
+OCCT version: 8.0.1
+PASS  STEP (STEPCAFControl_Reader) rejects missing file
+[32;1mFile not found : /nonexistent/agni_n0_missing_file
+[0m
+PASS  IGES (IGESCAFControl_Reader) rejects missing file
+PASS  BREP (BRepTools::Read) rejects missing file
+PASS  BREP binary (BinTools::Read) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  STL (RWStl::ReadFile) rejects missing file
+[31;1mError: file '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  OBJ (RWObj_CafReader) rejects missing file
+[31;1mFile '/nonexistent/agni_n0_missing_file' is not found[0m
+PASS  glTF (RWGltf_CafReader) rejects missing file
+PASS  BREP round trip of a box (write, read) runs headless
+RESULT: all checks passed
+smoke exit code: 0
+--- package versions
+cmake 3.28.3-1build7
+g++-13 13.3.0-6ubuntu2~24.04.1
+git 1:2.43.0-1ubuntu7.4
+libbrotli1 1.1.0-2build2
+libbsd0 0.12.1-1build1.1
+libbz2-1.0 1.0.8-5.1ubuntu0.1
+libc6 2.39-0ubuntu8.9
+libexpat1 2.6.1-2ubuntu0.6
+libfontconfig1 2.15.0-1.1ubuntu2
+libfreetype6 2.13.2+dfsg-1ubuntu0.2
+libgcc-s1 14.2.0-4ubuntu2~24.04.1
+libmd0 1.1.0-2build1.1
+libpng16-16t64 1.6.43-5ubuntu0.7
+libstdc++6 14.2.0-4ubuntu2~24.04.1
+libx11-6 2:1.8.7-1ubuntu0.1
+libxau6 1:1.0.9-1build6
+libxcb1 1.15-1ubuntu2
+libxdmcp6 1:1.1.3-0ubuntu6
+ninja-build 1.11.1-2
+zlib1g 1:1.3.dfsg-3.1ubuntu2.2
